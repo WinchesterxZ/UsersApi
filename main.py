@@ -1,16 +1,23 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import List, Optional, Dict
 from uuid import uuid4
+from enum import Enum
 
 app = FastAPI()
 
+class Gender(str, Enum):
+    MALE = "male"
+    FEMALE = "female"
 # User model
 class User(BaseModel):
     id: Optional[str] = None
     name: str
     email: str
     age: int
+    gender: Gender
+    phone_number: Optional[str] = None
+    address: Optional[str] = None
 
 # In-memory storage
 users: Dict[str, User] = {}
