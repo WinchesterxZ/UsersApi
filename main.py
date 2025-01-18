@@ -5,6 +5,7 @@ from uuid import uuid4
 from enum import Enum
 import json
 import os
+from collections import OrderedDict
 
 app = FastAPI()
 
@@ -22,8 +23,14 @@ def read_users() -> Dict[str, dict]:
         return {}
 
 def write_users(users: Dict[str, dict]):
+    # Convert to OrderedDict with newest entries first
+    ordered_users = OrderedDict()
+    # Add new entries at the beginning
+    for k in reversed(users.keys()):
+        ordered_users[k] = users[k]
+    
     with open(JSON_FILE, 'w') as f:
-        json.dump(users, f, indent=4)
+        json.dump(ordered_users, f, indent=4, ensure_ascii=False)
 
 class Gender(str, Enum):
     MALE = "male"
@@ -45,8 +52,13 @@ def create_user(user: User):
     users = read_users()
     user_id = str(uuid4())
     user.id = user_id
-    users[user_id] = user.dict()
-    write_users(users)
+    # Create new dict with new user first
+    new_users = OrderedDict()
+    new_users[user_id] = user.dict()
+    # Add existing users after
+    for k, v in users.items():
+        new_users[k] = v
+    write_users(new_users)
     return user
 
 # Get all users
