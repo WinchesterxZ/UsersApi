@@ -22,12 +22,18 @@ def read_users() -> Dict[str, dict]:
     except json.JSONDecodeError:
         return {}
 
-def write_users(users: Dict[str, dict]):
-    # Convert to OrderedDict with newest entries first
+def write_users(users: Dict[str, dict], new_id: str = None):
+    # Sort the users so that new_id (if provided) comes first
     ordered_users = OrderedDict()
-    # Add new entries at the beginning
-    for k in reversed(users.keys()):
-        ordered_users[k] = users[k]
+    
+    # If there's a new ID, add it first
+    if new_id and new_id in users:
+        ordered_users[new_id] = users[new_id]
+    
+    # Add all other users
+    for k, v in users.items():
+        if k != new_id:
+            ordered_users[k] = v
     
     with open(JSON_FILE, 'w') as f:
         json.dump(ordered_users, f, indent=4, ensure_ascii=False)
@@ -52,13 +58,8 @@ def create_user(user: User):
     users = read_users()
     user_id = str(uuid4())
     user.id = user_id
-    # Create new dict with new user first
-    new_users = OrderedDict()
-    new_users[user_id] = user.dict()
-    # Add existing users after
-    for k, v in users.items():
-        new_users[k] = v
-    write_users(new_users)
+    users[user_id] = user.dict()
+    write_users(users, new_id=user_id)  # Pass the new ID to ensure it's written first
     return user
 
 # Get all users
@@ -83,7 +84,7 @@ def update_user(user_id: str, user: User):
         raise HTTPException(status_code=404, detail="User not found")
     user.id = user_id
     users[user_id] = user.dict()
-    write_users(users)
+    write_users(users, new_id=user_id)  # Move updated user to top
     return user
 
 # Delete user
